@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sigma Geometry</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Chewy&family=Fredoka:wght@400;600&display=swap"
+        rel="stylesheet">
+
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' },
+            chtml: { scale: 0.95 }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+        </script>
+
+    <style>
+        :root {
+            --bg-color: #E0F7FA;
+            --splash-1: #FF9AA2;
+            /* Pastel Red */
+            --splash-2: #FFB7B2;
+            /* Salmon */
+            --splash-3: #FFDAC1;
+            /* Peach */
+            --splash-4: #E2F0CB;
+            /* Lime/Mint */
+            --splash-5: #B5EAD7;
+            /* Aqua */
+            --splash-6: #C7CEEA;
+            /* Lavender */
+
+            --text-color: #5d54a4;
+            --card-bg: #ffffff;
+
+            --correct-bg: #B5EAD7;
+            --correct-border: #7FBCAC;
+            --wrong-bg: #FF9AA2;
+            --wrong-border: #FF6F69;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(255, 154, 162, 0.4) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(181, 234, 215, 0.4) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, rgba(199, 206, 234, 0.2) 0%, transparent 50%);
+            margin: 0;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Centered vertically for start screen */
+            overflow-x: hidden;
+            color: var(--text-color);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            .bubble-shape.title-bubble h1 {
+                font-size: 2.2rem !important;
+            }
+
+            .bubble-shape {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+
+            .btn-action {
+                padding: 12px 30px;
+                font-size: 1.3rem;
+            }
+
+            .game-card {
+                max-width: 90%;
+            }
+        }
+
+        /* Animated Blobs Background */
+        .bg-blob {
+            position: absolute;
+            z-index: -1;
+            filter: blur(40px);
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .blob-1 {
+            top: -50px;
+            left: -50px;
+            width: 300px;
+            height: 300px;
+            background: var(--splash-1);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+        }
+
+        .blob-2 {
+            bottom: -50px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            background: var(--splash-5);
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation-delay: -2s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px) scale(1);
+            }
+
+            50% {
+                transform: translateY(20px) scale(1.05);
+            }
+
+            100% {
+                transform: translateY(0px) scale(1);
+            }
+        }
+
+        /* Main Container */
+        .game-card {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- Bubble Shape Styles --- */
+        .bubble-shape {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 3px solid var(--splash-6);
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .bubble-shape.title-bubble {
+            border-radius: 30px 50px 30px 50px;
+            background: #FFF0F5;
+            border-color: var(--splash-1);
+            transform: rotate(-2deg);
+        }
+
+        .bubble-shape.msg-bubble {
+            border-radius: 40px 30px 50px 30px;
+            border-color: var(--splash-5);
+            transform: rotate(1deg);
+        }
+
+        .bubble-shape.instruction-bubble {
+            border-radius: 20px 40px 20px 40px;
+            border-color: var(--splash-3);
+            background: #FFF8E1;
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        /* --- View Containers --- */
+        .view-section {
+            display: none;
+            /* Hidden by default */
+        }
+
+        .active-view {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* --- Quiz View Specifics --- */
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            box-shadow:
+                0 10px 30px rgba(93, 84, 164, 0.15),
+                inset 0 0 0 5px rgba(255, 255, 255, 0.5);
+            border: 4px solid #fff;
+            overflow: hidden;
+        }
+
+        /* Liquid Progress Bar */
+        .progress-container {
+            background: #f0f0f0;
+            height: 20px;
+            width: 100%;
+            border-bottom: 3px solid #fff;
+        }
+
+        .progress-liquid {
+            height: 100%;
+            background: linear-gradient(90deg, var(--splash-4), var(--splash-5));
+            width: 0%;
+            border-radius: 0 20px 20px 0;
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .progress-liquid::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 0 20px 0 0;
+        }
+
+        /* Header */
+        .header {
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-badge {
+            font-family: 'Chewy', cursive;
+            font-size: 1.5rem;
+            color: var(--splash-1);
+            background: #FFF0F5;
+            padding: 5px 15px;
+            border-radius: 20px 10px 20px 10px;
+            border: 2px solid var(--splash-2);
+        }
+
+        /* Quiz Content */
+        .question-area {
+            padding: 10px 25px 30px;
+            text-align: center;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            color: #5d54a4;
+        }
+
+        /* Buttons */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #fff;
+            border: 3px solid var(--splash-6);
+            border-radius: 20px 25px 20px 15px;
+            padding: 18px 20px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 var(--splash-6);
+            text-align: left;
+            width: 100%;
+        }
+
+        .option-btn:active {
+            transform: scale(0.96) translateY(4px);
+            box-shadow: none;
+        }
+
+        .option-btn.correct {
+            background-color: var(--correct-bg);
+            border-color: var(--correct-border);
+            box-shadow: 0 4px 0 var(--correct-border);
+            color: #2D7A65;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--wrong-bg);
+            border-color: var(--wrong-border);
+            box-shadow: 0 4px 0 var(--wrong-border);
+            color: #7A2D2D;
+            animation: shake 0.4s;
+        }
+
+        /* Feedback Bubble */
+        .feedback-bubble {
+            margin-top: 25px;
+            background: #FFF;
+            padding: 20px;
+            border-radius: 20px;
+            border: 3px dashed var(--splash-5);
+            display: none;
+            text-align: left;
+            animation: popIn 0.4s;
+        }
+
+        /* Primary Action Buttons (Lanjut, Mulai Lagi) */
+        .btn-action {
+            background: var(--splash-1);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-family: 'Chewy', cursive;
+            font-size: 1.5rem;
+            border-radius: 50px 30px 50px 40px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #E57373, 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .btn-action:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #E57373;
+        }
+
+        .btn-secondary {
+            background: var(--splash-5);
+            box-shadow: 0 6px 0 #7FBCAC;
+            margin-top: 15px;
+        }
+
+        .btn-secondary:active {
+            box-shadow: 0 0 0 #7FBCAC;
+        }
+
+        /* Result Screen */
+        .result-content {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 30px;
+            border: 4px solid #fff;
+        }
+
+        .big-score {
+            font-family: 'Chewy', cursive;
+            font-size: 5rem;
+            color: var(--splash-1);
+            text-shadow: 4px 4px 0px var(--splash-3);
+            margin: 10px 0;
+            animation: pulse 2s infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Next Button Container */
+        .controls {
+            padding: 10px 25px 25px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #next-btn {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="game-card">
+
+        <div id="start-view" class="view-section active-view">
+            <div class="bubble-shape title-bubble">
+                <h1 style="margin:0; font-family:'Chewy'; font-size: 3rem; color: #5d54a4;">Sigma Geometry</h1>
+            </div>
+
+            <div class="bubble-shape msg-bubble">
+                <p style="margin:0; font-size: 1.2rem; line-height: 1.4;">Jawab pertanyaan dengan benar yh. hitung dulu
+                    sebelum menjawab</p>
+                <p style="margin-top:10px; font-size: 1rem; color: #555;">Ketuk Mulai ketika sudah siap</p>
+            </div>
+
+            <button class="btn-action" onclick="startQuizFlow()">Mulai</button>
+        </div>
+
+        <div id="quiz-view" class="view-section">
+            <div class="quiz-container">
+                <div class="progress-container">
+                    <div class="progress-liquid" id="progress-fill"></div>
+                </div>
+
+                <div class="header">
+                    <div class="level-badge" id="question-counter">Soal 1/10</div>
+                    <div style="font-family:'Chewy'; font-size:1.5rem; color:#FFB300;" id="star-display">⭐ 0</div>
+                </div>
+
+                <div class="question-area">
+                    <div class="question-text" id="question-text">Loading...</div>
+
+                    <div class="options-grid" id="options-container">
+                    </div>
+
+                    <div class="feedback-bubble" id="feedback-box">
+                        <strong id="feedback-title" style="font-family:'Chewy'; font-size:1.4rem;"></strong>
+                        <div id="rationale-text" style="margin-top: 5px;"></div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-action" id="next-btn" onclick="nextQuestion()">Lanjut ➜</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-view" class="view-section">
+            <div class="result-content">
+                <h2 style="font-family:'Chewy'; margin:0; color:var(--text-color);">Selesai!</h2>
+                <div class="big-score" id="final-emoji">🏆</div>
+                <p id="result-message" style="font-size: 1.2rem; margin-bottom:20px;">Kamu hebat!</p>
+                <div style="font-size: 2rem; font-family:'Chewy'; color:var(--splash-5); margin-bottom:30px;"
+                    id="final-score-text"></div>
+
+                <button class="btn-action" onclick="restartQuiz()">Mulai lagi</button>
+                <button class="btn-action btn-secondary" onclick="goToHome()">Ke halaman utama</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <script>
+        // --- Question Generator ---
+        const templates = [
+            {
+                type: 'persegi_keliling',
+                generate: () => {
+                    const s = Math.floor(Math.random() * 20) + 5; // 5-25
+                    const ans = 4 * s;
+                    return {
+                        question: `Seorang pengrajin ingin membuat bingkai foto berbentuk persegi. Sisinya $${s}$ cm. Berapa total kayu untuk kelilingnya?`,
+                        correct: `${ans} cm`,
+                        rationale: `Betul! Keliling persegi = $4 \\times ${s}$ = ${ans} cm.`,
+                        hint: `Ingat, Keliling persegi = $4 \\times sisi$.`,
+                        distractors: [`${s * s} cm`, `${s * 2} cm`, `${ans + 10} cm`]
+                    };
+                }
+            },
+            {
+                type: 'persegi_luas_sisi',
+                generate: () => {
+                    const s = (Math.floor(Math.random() * 9) + 2) * 10; // 20, 30... 100
+                    const keliling = 4 * s;
+                    return {
+                        question: `Ubin persegi kelilingnya $${keliling}$ cm. Berapa panjang satu sisinya?`,
+                        correct: `${s} cm`,
+                        rationale: `Betul! $${keliling}$ dibagi $4$ = $${s}$.`,
+                        hint: `Untuk mencari sisi, bagi Keliling dengan 4 ($K \\div 4$).`,
+                        distractors: [`${keliling * 4} cm`, `${s / 2} cm`, `${keliling - s} cm`]
+                    };
+                }
+            },
+            {
+                type: 'persegipanjang_keliling',
+                generate: () => {
+                    const p = Math.floor(Math.random() * 15) + 10;
+                    const l = Math.floor(Math.random() * 8) + 2;
+                    const ans = 2 * (p + l);
+                    return {
+                        question: `Lapangan bulu tangkis panjangnya $${p}$ m dan lebar $${l}$ m. Berapa panjang garis kelilingnya?`,
+                        correct: `${ans} meter`,
+                        rationale: `Hebat! $(${p} + ${l}) \\times 2 = ${ans}$ meter.`,
+                        hint: `Rumus Keliling = $2 \\times (panjang + lebar)$.`,
+                        distractors: [`${p * l} meter`, `${p + l} meter`, `${ans * 2} meter`]
+                    };
+                }
+            },
+            {
+                type: 'persegipanjang_luas_sisi',
+                generate: () => {
+                    const l = (Math.floor(Math.random() * 5) + 2) * 10; // 20, 30, 40, 50, 60
+                    const factor = Math.floor(Math.random() * 5) + 2; // 2-6
+                    const p = Math.floor((l * factor) / 10) * 10; // e.g., 20 * 4 = 80
+                    const luas = p * l;
+                    return {
+                        question: `Meja persegi panjang luasnya $${luas.toLocaleString('id-ID')}$ cm², lebarnya $${l}$ cm. Berapa panjangnya?`,
+                        correct: `${p} cm`,
+                        rationale: `Cerdas! $${luas}$ dibagi $${l}$ = $${p}$.`,
+                        hint: `Cari panjang dengan membagi Luas dengan lebar ($L \\div l$).`,
+                        distractors: [`${luas * l} cm`, `${p + 20} cm`, `${l * 2} cm`]
+                    };
+                }
+            },
+            {
+                type: 'segitiga_luas',
+                generate: () => {
+                    const a = (Math.floor(Math.random() * 10) + 4) * 2; // Even number 8-28
+                    const t = Math.floor(Math.random() * 10) + 5;
+                    const ans = (a * t) / 2;
+                    return {
+                        question: `Ibu memotong sandwich jadi segitiga. Alasnya $${a}$ cm, tinggi $${t}$ cm. Berapa luasnya?`,
+                        correct: `${ans} cm²`,
+                        rationale: `Benar! $\\frac{1}{2} \\times ${a} \\times ${t} = ${ans}$.`,
+                        hint: `Rumus Luas Segitiga = $\\frac{1}{2} \\times alas \\times tinggi$.`,
+                        distractors: [`${a * t} cm²`, `${ans * 2} cm²`, `${ans + a} cm²`]
+                    };
+                }
+            },
+            {
+                type: 'segitiga_keliling_samasisi',
+                generate: () => {
+                    const s = Math.floor(Math.random() * 15) + 5;
+                    const ans = s * 3;
+                    return {
+                        question: `Taman segitiga sama sisi, panjang sisinya $${s}$ m. Berapa kelilingnya?`,
+                        correct: `${ans} meter`,
+                        rationale: `Benar! $${s} + ${s} + ${s} = ${ans}$.`,
+                        hint: `Karena sama sisi, cukup jumlahkan ketiganya: $s + s + s$ (atau $3 \\times s$).`,
+                        distractors: [`${s * s} meter`, `${s * 2} meter`, `${ans + 10} meter`]
+                    };
+                }
+            },
+            {
+                type: 'trapesium_luas',
+                generate: () => {
+                    const a = Math.floor(Math.random() * 5) + 4; // 4-8
+                    const b = a + Math.floor(Math.random() * 6) + 2; // a + 2-7
+                    const t = (Math.floor(Math.random() * 4) + 2) * 2; // even 4-10
+                    const ans = 0.5 * (a + b) * t;
+                    return {
+                        question: `Atap rumah berbentuk trapesium. Sisi atas $${a}$ m, bawah $${b}$ m, tinggi $${t}$ m. Berapa luasnya?`,
+                        correct: `${ans} m²`,
+                        rationale: `Pintar! $\\frac{1}{2} \\times (${a}+${b}) \\times ${t} = ${ans}$.`,
+                        hint: `Rumus Luas = $\\frac{1}{2} \\times (atas + bawah) \\times tinggi$.`,
+                        distractors: [`${ans * 2} m²`, `${(a + b) * t} m²`, `${ans + 10} m²`]
+                    };
+                }
+            },
+            {
+                type: 'trapesium_tinggi',
+                generate: () => {
+                    const t = Math.floor(Math.random() * 5) + 2; // 2-6
+                    const a = Math.floor(Math.random() * 5) + 2;
+                    const b = a + Math.floor(Math.random() * 5) + 1;
+                    const luas = 0.5 * (a + b) * t;
+                    // Ensure nice number if possible, or allow .5
+                    return {
+                        question: `Papan trapesium sisi sejajarnya $${a}$ m dan $${b}$ m. Luasnya $${luas}$ m². Berapa tingginya?`,
+                        correct: `${t} meter`,
+                        rationale: `Luar biasa! Tingginya ${t} meter.`,
+                        hint: `Gunakan rumus: Tinggi = $(2 \\times Luas) \\div (jumlah sisi sejajar)$.`,
+                        distractors: [`${t * 2} meter`, `${t + 2} meter`, `${a + b} meter`]
+                    };
+                }
+            },
+            {
+                type: 'jargen_luas',
+                generate: () => {
+                    const a = Math.floor(Math.random() * 10) + 5;
+                    const t = Math.floor(Math.random() * 8) + 3;
+                    const ans = a * t;
+                    return {
+                        question: `Penghapus jajar genjang alasnya $${a}$ cm dan tinggi $${t}$ cm. Berapa luasnya?`,
+                        correct: `${ans} cm²`,
+                        rationale: `Tepat! $${a} \\times ${t} = ${ans}$.`,
+                        hint: `Rumus Luas Jajar Genjang = $alas \\times tinggi$.`,
+                        distractors: [`${ans / 2} cm²`, `${a + t} cm²`, `${ans * 2} cm²`]
+                    };
+                }
+            },
+            {
+                type: 'jargen_keliling',
+                generate: () => {
+                    const a = Math.floor(Math.random() * 10) + 5;
+                    const m = Math.floor(Math.random() * 8) + 3;
+                    const ans = 2 * (a + m);
+                    return {
+                        question: `Penghapus tadi alasnya $${a}$ cm, sisi miring $${m}$ cm. Berapa kelilingnya?`,
+                        correct: `${ans} cm`,
+                        rationale: `Yey! $2 \\times (${a} + ${m}) = ${ans}$.`,
+                        hint: `Rumus Keliling = $2 \\times (alas + sisi miring)$.`,
+                        distractors: [`${a + m} cm`, `${a * m} cm`, `${ans / 2} cm`]
+                    };
+                }
+            }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function generateQuestions(totalPool = 100) {
+            const questions = [];
+            for (let i = 0; i < totalPool; i++) {
+                const template = templates[Math.floor(Math.random() * templates.length)];
+                const data = template.generate();
+
+                // Construct options
+                const options = [
+                    { text: data.correct, rationale: data.rationale, isCorrect: true }
+                ];
+                data.distractors.forEach(d => {
+                    // Simple distinct check to avoid duplicate wrong answers
+                    if (d !== data.correct) {
+                        options.push({
+                            text: d,
+                            rationale: `Kurang tepat. ${data.hint}`,
+                            isCorrect: false
+                        });
+                    }
+                });
+
+                // Shuffle options
+                shuffleArray(options);
+
+                questions.push({
+                    questionNumber: i + 1,
+                    question: data.question,
+                    answerOptions: options
+                });
+            }
+            return questions;
+        }
+
+        let quizData = { questions: [] };
+        let currentQ = 0;
+        let score = 0;
+        let answered = false;
+        const splashColors = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA'];
+
+        // --- Navigation Functions ---
+
+        function switchView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.remove('active-view');
+            });
+            // Show target
+            document.getElementById(viewId).classList.add('active-view');
+        }
+
+        function startQuizFlow() {
+            // 1. Generate 100 questions
+            const pool = generateQuestions(100);
+            // 2. Shuffle pool
+            shuffleArray(pool);
+            // 3. Take first 10
+            quizData.questions = pool.slice(0, 10);
+            // 4. Renumber logically for display
+            quizData.questions.forEach((q, i) => q.questionNumber = i + 1);
+
+            currentQ = 0;
+            score = 0;
+            loadQuestion();
+            switchView('quiz-view');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+
+        function restartQuiz() {
+            startQuizFlow();
+        }
+
+        function goToHome() {
+            switchView('start-view');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Quiz Logic ---
+
+        function loadQuestion() {
+            answered = false;
+            const qData = quizData.questions[currentQ];
+
+            document.getElementById('question-counter').innerText = `Soal ${currentQ + 1} / ${quizData.questions.length}`;
+            document.getElementById('question-text').innerHTML = qData.question;
+
+            const feedback = document.getElementById('feedback-box');
+            feedback.style.display = 'none';
+
+            document.getElementById('next-btn').style.display = 'none';
+
+            // Update Liquid Bar
+            const pct = (currentQ / quizData.questions.length) * 100;
+            document.getElementById('progress-fill').style.width = pct + "%";
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            qData.answerOptions.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = opt.text;
+                btn.onclick = () => check(opt, btn);
+                container.appendChild(btn);
+            });
+
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function check(option, btn) {
+            if (answered) return;
+            answered = true;
+
+            const feedbackBox = document.getElementById('feedback-box');
+            const buttons = document.querySelectorAll('.option-btn');
+            const title = document.getElementById('feedback-title');
+            const rationale = document.getElementById('rationale-text');
+
+            if (option.isCorrect) {
+                btn.classList.add('correct');
+                score++;
+                document.getElementById('star-display').innerText = `⭐ ${score}`;
+                title.innerText = "YEY! BENAR! 🎉";
+                title.style.color = "#2D7A65";
+
+                confetti({
+                    particleCount: 70,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: splashColors,
+                    shapes: ['circle', 'square'],
+                    disableForReducedMotion: true
+                });
+            } else {
+                btn.classList.add('wrong');
+                title.innerText = "YAH... KURANG TEPAT 😅";
+                title.style.color = "#7A2D2D";
+
+                // Highlight right answer
+                quizData.questions[currentQ].answerOptions.forEach((o, i) => {
+                    if (o.isCorrect) buttons[i].classList.add('correct');
+                });
+            }
+
+            rationale.innerHTML = option.rationale;
+            feedbackBox.style.display = 'block';
+            document.getElementById('next-btn').style.display = 'inline-block';
+
+            setTimeout(() => {
+                feedbackBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+
+            if (window.MathJax) MathJax.typesetPromise([rationale]);
+
+            buttons.forEach(b => b.disabled = true);
+        }
+
+        function nextQuestion() {
+            currentQ++;
+            if (currentQ < quizData.questions.length) {
+                loadQuestion();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            switchView('result-view');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('progress-fill').style.width = '100%';
+
+            document.getElementById('final-score-text').innerText = `Skor: ${score} / ${quizData.questions.length}`;
+
+            let emoji = "🌱";
+            let msg = "Ayo coba lagi!";
+
+            if (score >= 8) {
+                emoji = "🧜‍♂️";
+                msg = "Kamu Raja Sigma!";
+                confetti({ particleCount: 200, spread: 150, origin: { y: 0.6 }, colors: splashColors });
+            } else if (score >= 5) {
+                emoji = "🏄";
+                msg = "Keren! Makin jago nih.";
+            }
+
+            document.getElementById('final-emoji').innerText = emoji;
+            document.getElementById('result-message').innerText = msg;
+        }
+
+    </script>
+
+</body>
+
+</html>
